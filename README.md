@@ -1,6 +1,6 @@
 # OpenStreetMap_project
 
-###Files Directory:
+### Files Directory:
   1. tags_types.py - Counting each tag category in a dictionary. Check 'lower', 'lower_colon' and 'problemchars'
   2. tags.py - Iterative parsing to process the map file and find out the tags.
   3. street_name_audit.py - Auditing Street Names
