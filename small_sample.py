@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET  # Use cElementTree or lxml if too slow
 
 OSM_FILE =  "D:\Desktop\WGU Projects\data_analyst_nanodegree\data_wrangling\inglewood_openstreetmap\inglewood_map"
 
-SAMPLE_FILE = "kent_small_sample.osm"
+SAMPLE_FILE = "ing_small_sample.osm"
 
 k = 80 # Parameter: take every k-th top level element
 
