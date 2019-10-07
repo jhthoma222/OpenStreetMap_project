@@ -1,5 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# Preparing the database - SQL
+# File = ing.import.py
+
 
 """
 After auditing is complete the next step is to prepare the data to be inserted into a SQL database.
@@ -154,17 +155,6 @@ The final return value for a "way" element should look something like:
                'value': '366409'}]}
 """
 
-import csv
-import codecs
-import pprint
-import re
-import xml.etree.cElementTree as ET
-import cerberus
-import schema
-
-OSM_FILE =  "D:\Desktop\WGU Projects\data_analyst_nanodegree\data_wrangling\inglewood_openstreetmap\inglewood_map"
-
-
 NODES_PATH = "nodes.csv"
 NODE_TAGS_PATH = "nodes_tags.csv"
 WAYS_PATH = "ways.csv"
@@ -246,11 +236,10 @@ WAY_TAGS_FIELDS = ['id', 'key', 'value', 'type']
 WAY_NODES_FIELDS = ['id', 'node_id', 'position']
 
 
-
-# Update Street Names  
+# Regex to match correct street name types  
 street_type_re = re.compile(r'\b\S+\.?$', re.IGNORECASE)
 
-# valid street names
+# List of valid street names
 expected_street_types = ["Street", "Avenue", "Boulevard", "Drive", "Court", "Place", "Square", "Lane", "Road",
             "Trail", "Parkway", "Commons", "Northeast", "South", "Southeast", "Southwest","Northwest",
             "East", "West", "North", "Highway", "Way", "Terrace", "Freeway", "Highway", "Point", 
@@ -264,6 +253,13 @@ street_type_mapping = { "Ave": "Avenue",
           }
 
 def update_street_name(value):
+    """update street name values based on mapping.
+    Args:
+        value (str): original street name value.
+    Returns:
+        value (str): cleaned street name value.
+        None if data does not match expected format.
+    """
     m = street_type_re.search(value)
     if m:
         if m.group() in street_type_mapping:
@@ -273,51 +269,33 @@ def update_street_name(value):
     else:
         return None
 
-    
-# Audit and update postal codes
-postcode_re = re.compile(r'^\d{5}$')
 
-def audit_post_codes(post_codes, post_code):
-    m = post_code_re.match(post_code)
-    if not m:
-        post_codes.add(post_code)
-
-def is_postcode(elem):
-    return (elem.attrib['k'] == "addr:postcode")
-def audit(osmfile):
-    osm_file = open(osmfile, "rb")
-    post_codes = set()
-    bad_postcode = set()
-    for event, elem in ET.iterparse(osm_file, events=("start",)):
-        if elem.tag == "node" or elem.tag == "way":
-            for tag in elem.iter("tag"):
-               if is_postcode(tag):
-                    m = postcode_re.search(tag.attrib['v'])
-                    if m:
-                        post_codes.add(tag.attrib['v'])  
-                    else:
-                        bad_postcode.add(tag.attrib['v'])
-
-    osm_file.close()
-    return (bad_postcode)
-
-# Split the post code at the "-" and return the first part
 def update_postcode(bad_postcode):
+    """update postcode based on format.  
+    Args:
+        bad_postcode (str): bad postcode to be split at the "-"
+    Returns:
+        postcode: cleaned postcode.  only the first five digits
+    """
     postcode = bad_postcode.split("-")[0]
     return postcode
 
-# Update Tags for street names and postal codes
-def update_tag(tag):
-    if tag['key'] == "street":
-        tag['value'] = update_name(tag['value'], street_type_mapping)
-    elif tag['key'] == "postcode":
-        tag['value'] = update_postcode(tag['value'])
-
     
-"""Clean and shape node or way XML element to Python dict."""
-
 def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIELDS,
                   problem_chars=PROBLEMCHARS, default_tag_type='regular'):
+    """Clean and shape node or way XML element to Python dict.
+    Args:
+        element (obj): element found using ET.iterparse().
+        node_attr_fields (list): node attribute fields to be passed to output dict
+        way_attr_fields (list): way attribute fields to be passed to output dict
+        problem_chars (regex): regular expression to recognise problem characters
+        default_tag_category (str): default value to be passed to the 'category' 
+            field in output dict
+    Returns:
+        dict of node/way element attributes and attributes of child elements (tags)
+        format if node: {'node': node_attribs, 'node_tags': tags}
+        format if way: {'way': way_attribs, 'way_nodes': way_nodes, 'way_tags': tags}
+    """
     
     node_attribs = {}
     way_attribs = {}
@@ -326,7 +304,7 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
 
     # Write the value of each node element attribute into a dictionary.
     if element.tag == 'node':
-        for field in NODE_FIELDS:  
+        for field in node_attr_fields:  
             # node_attribs contains top level node attributes
             node_attribs[field] = element.attrib[field]
            
@@ -335,6 +313,7 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
             child_tag = {}
             value_k = child.attrib['k']
             child_tag['id'] = node_attribs['id']
+            
             # If tag "k" contains problematic characters, ignore it
             if PROBLEMCHARS.search(value_k): 
                 continue
@@ -350,6 +329,11 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
                 child_tag['value'] = child.attrib['v']
                 child_tag['type'] = default_tag_type
 
+            # Update Tags for street names and postal codes
+            if value_k == "addr:street":
+                child_tag['value']= update_street_name(child_tag['value'])
+            elif value_k == "addr:postcode":
+                child_tag['value'] = update_postcode(child_tag['value'])
         
             # Append dictionary tag to list tags
             tags.append(child_tag) 
@@ -358,7 +342,7 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
         
     # Write the value of each way element attribute into a dictionary.    
     elif element.tag == 'way':
-        for field in WAY_FIELDS:  
+        for field in way_attr_fields:  
             # way_attribs contains top level way attributes
             way_attribs[field] = element.attrib[field]
         
@@ -369,6 +353,7 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
             if child.tag == 'tag':  
                 value_k = child.attrib['k']
                 child_tag['id'] = way_attribs['id']
+                                
                 # If tag "k" contains problematic characters, ignore it
                 if PROBLEMCHARS.search(value_k): 
                     continue
@@ -383,6 +368,12 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
                     child_tag['key'] = value_k
                     child_tag['value'] = child.attrib['v']
                     child_tag['type'] = default_tag_type
+                    
+                 # Update Tags for street names and postal codes
+                if value_k == "addr:street":
+                    child_tag['value']= update_street_name(child_tag['value'])
+                elif value_k == "addr:postcode":
+                    child_tag['value'] = update_postcode(child_tag['value'])
 
                 # Append dictionary tag to list tags
                 tags.append(child_tag) 
@@ -401,7 +392,13 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
 #               Helper Functions                     #
 # ================================================== #
 def get_element(osm_file, tags=('node', 'way', 'relation')):
-    """Yield element if it is the right type of tag."""
+    """Yield element if it is the right type of tag.
+    Args:
+        osmfile (obj): XML file to audit.
+        tags (list): element types to be yielded,
+    Yields:
+        elem (obj): element found using ET.iterparse().
+    """
    
     context = ET.iterparse(osm_file, events=('start', 'end'))
     _, root = next(context)
@@ -412,7 +409,15 @@ def get_element(osm_file, tags=('node', 'way', 'relation')):
 
 
 def validate_element(element, validator, schema=SCHEMA):
-    """Raise ValidationError if element does not match schema."""
+    """Raise ValidationError if element does not match schema.
+    Args:
+        element (dict): dict of node/way element attributes and attributes of child elements
+            returned by shape_element()
+        validator (obj): cerberus.validator object
+        schema (dict): schema of desired data structure
+    Raises:
+        exception if element structure does not match schema
+    """
     
     if validator.validate(element, schema) is not True:
         field, errors = next(validator.errors.iteritems())
@@ -426,7 +431,13 @@ def validate_element(element, validator, schema=SCHEMA):
 #               Main Function                        #
 # ================================================== #
 def process_map(file_in, validate=False):
-
+     """Iteratively process each XML element and write to csv(s).
+    Args:
+        file_in (obj): XML file to audit.
+        validate (bool): if True, will validate each element using validate_element()
+    Returns:
+        five CSV files:  nodes, nodes_tags, ways, ways_tags and ways_nodes 
+    """
     with open(NODES_PATH, 'wb') as nodes_file, \
          open(NODE_TAGS_PATH, 'wb') as nodes_tags_file, \
          open(WAYS_PATH, 'wb') as ways_file, \
