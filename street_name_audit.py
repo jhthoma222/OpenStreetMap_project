@@ -1,4 +1,6 @@
-# Audting Street names
+'''Auditing the street names vs the 'expected_street_types'.
+   Print the street names that do not match
+'''
 
 import unicodecsv
 import pprint
@@ -32,7 +34,7 @@ def audit_street_type(street_types, street_name):
 def is_street_name(elem):
     return (elem.attrib['k'] == "addr:street")
 
-
+# Run all of the audits above.
 def audit(osmfile):
     osm_file = open(osmfile, "rb")
     street_types = defaultdict(set)
@@ -44,16 +46,6 @@ def audit(osmfile):
     osm_file.close()
     return street_types
 
-
-def update_street_name(value):
-    m = street_type_re.search(value)
-    if m:
-        if m.group() in street_type_mapping:
-            startpos = value.find(m.group())
-            value = value[:startpos] + street_type_mapping[m.group()]
-        return value
-    else:
-        return None
 
 st_types = audit(OSM_FILE)
 pprint.pprint(dict(st_types))
