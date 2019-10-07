@@ -26,11 +26,12 @@ expected_street_types = ["Street", "Avenue", "Boulevard", "Drive", "Court", "Pla
            "Alley", "Circle", "Cienega", "Thornburn"]
 
 def audit_street_type(street_types, street_name):
-     """Build defaultdict of unexpected street types.
+    """Build defaultdict of unexpected street types.
     Args:
         street_types (dict): defaultdict(set) of unexpected street types.
         street_name (str): street name data.
     """
+
     m = street_type_re.search(street_name)
     if m:
         street_type = m.group()
@@ -48,7 +49,7 @@ def is_street_name(elem):
     return (elem.attrib['k'] == "addr:street")
 
 def audit(osmfile):
-     """Audit street type.
+    """Audit street type.
     Args:
         osmfile (obj): OSM (XML) file to audit.
     Returns:
