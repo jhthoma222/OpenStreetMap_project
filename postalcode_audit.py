@@ -19,7 +19,7 @@ post_code_re = re.compile(r'^\d{5}$')
 """
 
 def audit_post_codes(bad_post_codes, post_code):
-     """Build a set of bad post codes.
+    """Build a set of bad post codes.
     Args:
         bad_post_codes (set): bad post codes.
         post_code (str): post code data.
@@ -39,7 +39,7 @@ def is_post_code(elem):
 
 
 def audit(osmfile):
-     """Audit post code data.
+    """Audit post code data.
     Args:
         osmfile (obj): OSM (XML) file to audit.
     Returns:
