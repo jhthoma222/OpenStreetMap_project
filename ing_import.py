@@ -2,6 +2,25 @@
 # File = ing.import.py
 
 
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import xml.etree.cElementTree as ET
+import pprint
+import re
+import csv
+from collections import defaultdict
+import schema
+import cerberus
+import codecs
+import datetime as dt
+from sqlalchemy import create_engine, Table, Column, Integer, Float, String, MetaData, ForeignKey
+import sqlite3
+import unicodecsv
+
+OSM_FILE =  "D:\Desktop\WGU Projects\data_analyst_nanodegree\data_wrangling\inglewood_openstreetmap\inglewood_map"
+
 """
 After auditing is complete the next step is to prepare the data to be inserted into a SQL database.
 To do so you will parse the elements in the OSM XML file, transforming them from document format to
@@ -431,7 +450,7 @@ def validate_element(element, validator, schema=SCHEMA):
 #               Main Function                        #
 # ================================================== #
 def process_map(file_in, validate=False):
-     """Iteratively process each XML element and write to csv(s).
+    """Iteratively process each XML element and write to csv(s).
     Args:
         file_in (obj): XML file to audit.
         validate (bool): if True, will validate each element using validate_element()
