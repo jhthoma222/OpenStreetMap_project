@@ -1,4 +1,6 @@
-# Audting Postal Codes
+'''Auditing the postal codes  See if they match the 'post_code_re' format.
+   Print the postal codes that do not match
+'''
 
 import unicodecsv
 import pprint  
@@ -20,6 +22,7 @@ def audit_post_codes(bad_post_codes, post_code):
 def is_post_code(elem):
     return (elem.attrib['k'] == "addr:postcode")
 
+# Run all of the audits above.
 def audit(osmfile):
     osm_file = open(osmfile, "rb")
     bad_post_codes = set()
